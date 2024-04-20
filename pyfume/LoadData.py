@@ -1,5 +1,6 @@
 import numpy as np
 from copy import deepcopy
+import pdb
 
 
 class DataLoader(object):
@@ -100,6 +101,7 @@ class DataLoader(object):
                     "Please specify valid variable indices (as int) or variable names (as strings) for variables to log transform.")
 
         # BACKUP CATEGORICAL VARIABLES
+
         if categorical_indices is None:
             categorical_indices = []
         categorical_cols = self.dataX[:, categorical_indices]

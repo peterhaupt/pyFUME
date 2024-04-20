@@ -2,6 +2,7 @@ import copy
 import numpy as np
 from scipy.optimize import curve_fit
 import numpy.matlib
+import pdb
 
 class ConsequentEstimator(object):
     """
@@ -55,6 +56,7 @@ class ConsequentEstimator(object):
         y = self.y_train.copy()
         f = self.firing_strengths.copy()
 
+        # pdb.set_trace()
         # ONE HOT ENCODE CATEGORICAL VARIABLES
         slices = []
         for i in range(x.shape[1]):
@@ -72,6 +74,15 @@ class ConsequentEstimator(object):
         u = np.unique(x[:, -1])
         if u.shape[0] != 1 or u[0] != 1:
             x = np.hstack((x, np.ones((x.shape[0], 1))))
+
+        print("Hello from suglms")
+        # Get the number of columns in x
+        num_cols = x.shape[1]
+        # Set everything except the last column to 0
+        x[:, :num_cols-1] = 0
+        # pdb.set_trace()
+
+
 
         # Find the number of data points (mx & mf) , the number of variables (nx) and the
         # number of clusters (nf) 

@@ -9,7 +9,7 @@ from .Tester import SugenoFISTester
 from .FeatureSelection import FeatureSelector
 from .Sampler import Sampler
 import numpy as np
-
+import pdb
 
 class BuildTSFIS(object):
     """
@@ -185,6 +185,7 @@ class BuildTSFIS(object):
                                          variable_names=self.selected_variable_names,
                                          **kwargs)
             self.firing_strengths = fsc.calculate_fire_strength(data=self.x_train)
+
 
             # Estimate the parameters of the consequent
             ce = ConsequentEstimator(x_train=self.x_train, y_train=self.y_train, firing_strengths=self.firing_strengths,
@@ -380,6 +381,7 @@ class BuildTSFIS(object):
             # Calculate the firing strengths
             fsc = FireStrengthCalculator(self.antecedent_parameters, self.nr_clus, self.selected_variable_names, **kwargs)
             self.firing_strengths = fsc.calculate_fire_strength(self.x_train)
+
 
             # Estimate the parameters of the consequent
             ce = ConsequentEstimator(self.x_train, self.y_train, self.firing_strengths,

@@ -119,7 +119,11 @@ class ConsequentEstimator(object):
             # reshape partition matrix
             s = np.matlib.repmat(xx, nx, 1).T
             f1 = np.reshape(s, (mx, nf * nx), order='F')
-            x1 = f1 * x1
+
+            # CHANGE HERE!!!
+            # f1 - betas
+            # x1 - input
+            x1 = f1 * x1 # removed x1
 
             # Find least squares solution
             #            xp = np.linalg.lstsq(x1,y,rcond=None)

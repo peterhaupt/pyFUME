@@ -193,6 +193,9 @@ class Clusterer(object):
 
         n_instances = data.shape[0]
 
+        # set random seed for numpy to get reproducible results for pyFUME by hand
+        np.random.seed(42)
+
         # randomly initaliaze u
         u = np.random.rand(n_instances, n_clusters)
         u = np.fmax(u, np.finfo(np.float64).eps)
@@ -203,7 +206,7 @@ class Clusterer(object):
 
         ut = u.T
 
-        
+
 
         for it in range(0, max_iter):
             # copy old u matrix

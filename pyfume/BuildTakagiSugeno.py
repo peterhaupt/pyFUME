@@ -42,7 +42,8 @@ class BuildTSFIS(object):
         if 'normalization' in kwargs.keys(): kwargs['normalize'] = kwargs['normalization']
         if 'normalize' not in kwargs.keys(): kwargs['normalize'] = False
         if 'imputation' not in kwargs.keys(): kwargs['imputation'] = 'knn'  # new
-        if 'percentage_training' not in kwargs.keys(): kwargs['percentage_training'] = 0.75
+        # removed train-test split from default settings - now 100% of data is used for training
+        if 'percentage_training' not in kwargs.keys(): kwargs['percentage_training'] = 1.0
         if 'oversampling' not in kwargs.keys(): kwargs['oversampling'] = False
         if kwargs['oversampling'] is True:
             if 'sampling_number_of_bins' not in kwargs.keys(): kwargs['sampling_number_of_bins'] = 2
@@ -157,6 +158,10 @@ class BuildTSFIS(object):
             if kwargs['cluster_method'] == 'fcm':
                 self.cluster_centers, self.partition_matrix, _ = cl.cluster(method='fcm', fcm_m=kwargs['m'],
                     fcm_maxiter=kwargs['fcm_maxiter'], fcm_error=kwargs['fcm_error'])
+                ############################
+    
+
+                pdb.set_trace()
             elif kwargs['cluster_method'] == 'gk':
                 self.cluster_centers, self.partition_matrix, _ = cl.cluster(method='gk')
             elif kwargs['cluster_method'] == 'fst-pso':

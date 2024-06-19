@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.linalg import norm
+import pdb
 
 
 # from random import seed
@@ -195,7 +196,14 @@ class Clusterer(object):
         # randomly initaliaze u
         u = np.random.rand(n_instances, n_clusters)
         u = np.fmax(u, np.finfo(np.float64).eps)
+
+        # FUZZY C-MEANS CLUSTERING - Table 2 - random initialization of clusters
+        print("matrix is stored in variable u")
+        pdb.set_trace()
+
         ut = u.T
+
+        
 
         for it in range(0, max_iter):
             # copy old u matrix

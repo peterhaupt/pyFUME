@@ -37,7 +37,9 @@ class DataSplitter(object):
         """
 
         universe = set(range(0, np.shape(dataX)[0]))
-        trn = np.random.choice(dataX.shape[0], int(round(percentage_training * dataX.shape[0])), replace=False)
+        # added new code without random shuffling of the data
+        trn = np.arange(int(round(percentage_training * dataX.shape[0])))
+        # trn = np.random.choice(dataX.shape[0], int(round(percentage_training * dataX.shape[0])), replace=False) # original code in case of random shuffling
         tst = list(universe - set(trn))
 
         x_train = dataX[trn]

@@ -158,10 +158,11 @@ class BuildTSFIS(object):
             if kwargs['cluster_method'] == 'fcm':
                 self.cluster_centers, self.partition_matrix, _ = cl.cluster(method='fcm', fcm_m=kwargs['m'],
                     fcm_maxiter=kwargs['fcm_maxiter'], fcm_error=kwargs['fcm_error'])
-                ############################
-    
+                
+                # FUZZY C-MEANS CLUSTERING - results - Table 9 and 10
+                print("The final centroids are stored in self.cluster_centers and the partition matrix in self.partition_matrix.")
+                # pdb.set_trace()
 
-                pdb.set_trace()
             elif kwargs['cluster_method'] == 'gk':
                 self.cluster_centers, self.partition_matrix, _ = cl.cluster(method='gk')
             elif kwargs['cluster_method'] == 'fst-pso':
@@ -181,9 +182,11 @@ class BuildTSFIS(object):
 
             # Estimate the membership funtions of the system (default shape: gauss)
             self._antecedent_estimator = AntecedentEstimator(x_train=self.x_train, partition_matrix=self.partition_matrix)
-    
             self.antecedent_parameters = self._antecedent_estimator.determineMF(mf_shape=kwargs['mf_shape'], merge_threshold=merge_threshold, setnes_threshold=setnes_threshold, categorical_indices=kwargs['categorical_indices'])
             what_to_drop = self._antecedent_estimator._info_for_simplification
+
+            #############
+            ###### CONTINUE HERE TOMORROW
 
             # Calculate the firing strengths
             fsc = FireStrengthCalculator(antecedent_parameters=self.antecedent_parameters, nr_clus=self.nr_clus,

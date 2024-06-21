@@ -202,13 +202,13 @@ class Clusterer(object):
 
         # FUZZY C-MEANS CLUSTERING - Table 2 - random initialization of clusters
         print("matrix is stored in variable u")
-        pdb.set_trace()
+        # pdb.set_trace()
 
         ut = u.T
 
         # FUZZY C-MEANS CLUSTERING - Table 3 - tranpose matrix u with the random initialisation of the clusters
         print("transposed matrix is stored in variable ut")
-        pdb.set_trace()
+        # pdb.set_trace()
 
         for it in range(0, max_iter):
             # copy old u matrix
@@ -218,21 +218,21 @@ class Clusterer(object):
 
             # FUZZY C-MEANS CLUSTERING - Table 4 - Normalised initialisation of the clusters
             print("normalised matrix is stored in variable u_old")
-            pdb.set_trace()
+            # pdb.set_trace()
 
             # elevate to m
             um = u_old ** m
 
             # FUZZY C-MEANS CLUSTERING - Table 5 - Concentrated matrix - raised to the power of 2
             print("concentrated matrix is stored in variable um")
-            pdb.set_trace()
+            # pdb.set_trace()
 
             # calculate cluster centers
             centers = um.dot(data) / (np.ones((data.shape[1], 1)).dot(np.atleast_2d(um.sum(axis=1))).T)
 
             # FUZZY C-MEANS CLUSTERING - Table 6 - Centroids of the clusters
             print("Matrix with the centroids is stored in variable centers")
-            pdb.set_trace()
+            # pdb.set_trace()
 
             # calculate distances
             dist = cdist(centers, data, metric='euclidean')
@@ -240,7 +240,7 @@ class Clusterer(object):
 
             # FUZZY C-MEANS CLUSTERING - Table 7 - Distance of each instance to each centroid
             print("Matrix with the distances is stored in variable dist")
-            pdb.set_trace()
+            # pdb.set_trace()
 
             # calculate objective
             jm = (um * dist ** 2).sum()
@@ -251,7 +251,7 @@ class Clusterer(object):
 
             # FUZZY C-MEANS CLUSTERING - Table 8 - Updated membership matrix
             print("Update membership matrix is stored in variable ut")
-            pdb.set_trace()
+            # pdb.set_trace()
 
             # stopping criterion
             if np.linalg.norm(ut - u_old) < error:

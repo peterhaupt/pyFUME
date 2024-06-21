@@ -4,6 +4,7 @@ from simpful import SingletonsSet
 from scipy.optimize import curve_fit
 from numpy import linspace, array
 from collections import defaultdict
+import pdb
 
 
 def is_complete(G):
@@ -28,6 +29,9 @@ class AntecedentEstimator(object):
         self.partition_matrix = partition_matrix
         self._info_for_simplification = None
         self._calculate_all_extreme_values()
+        # ESTIMATE ANTECENDENTS - determine extreme values - Table 11
+        print("The extreme values are stored in self._extreme_values. The first element is the minimum and the second element is the maximum for each variable.")
+        # pdb.set_trace()
         self._setnes_removed_sets = defaultdict(list)
 
     def determineMF(self, mf_shape='gauss', merge_threshold=1.0, categorical_indices=None, setnes_threshold=1.0, global_singleton=None):
@@ -108,6 +112,9 @@ class AntecedentEstimator(object):
                 for j in range(0, self.partition_matrix.shape[1]):
                     mfin = self.partition_matrix[:, j]
                     mf, xx = self._convexMF(xin=xin, mfin=mfin)
+
+                    #############
+                    ###### CONTINUE HERE TOMORROW
                     prm = self._fitMF(x=xx, mf=mf, mf_shape=mf_shape)
                     mf_list.append(prm)
 
@@ -257,7 +264,7 @@ class AntecedentEstimator(object):
         S = [G.subgraph(c).copy() for c in connected_components(G)]
         return S
 
-    def _convexMF(self, xin, mfin, norm=1, nc=1000):
+    def _convexMF(self, xin, mfin, norm=1, nc=10): ###### CHANGE nc back to 1000
 
         # Calculates the convex membership function that envelopes a given set of
         # data points and their corresponding membership values. 
@@ -276,6 +283,10 @@ class AntecedentEstimator(object):
         # Normalize the membership values (if requested)
         if norm == 1:
             mfin = np.divide(mfin, np.max(mfin))
+
+        # ESTIMATE ANTECENDENTS - section 3.2. - normalise the membership values of fuzzy c-means clustering - Table 12
+        print("The normalise membership values are stored in mfin. The input values of the feature are stored in xin.")
+        # pdb.set_trace()
 
         # Initialize auxilary variables
         acut = np.linspace(0, np.max(mfin), nc)
@@ -296,6 +307,11 @@ class AntecedentEstimator(object):
                 mf[i] = acut[i]
                 mf[i + nc] = acut[i]
 
+        # ESTIMATE ANTECENDENTS - determine elements in the alpha cuts - first part of section 3.2
+        print("The input values of the feature are stored in x and the membership values are stored in mf.")
+        print("The first half of the values are the minimum and the second half are the maximum for each alpha cut.")
+        # pdb.set_trace()
+
         # # Determine the elements in the alpha cuts    
         # for i in range(0,nc):
         #     tmp1 = mfin>acut[i]
@@ -312,25 +328,45 @@ class AntecedentEstimator(object):
         x = x[idx == False]
         mf = mf[idx == False]
 
+        # ESTIMATE ANTECENDENTS - delete NaN values - second part of section 3.2
+        print("The cleaned input values of the feature are stored in x and the membership values are stored in mf.")
+        # pdb.set_trace()
+
         # Sort vectors based on membership value (descending order)
         indmf = mf.argsort(axis=0)
         indmf = np.flipud(indmf)
         mf = mf[indmf]
         x = x[indmf]
 
+        # ESTIMATE ANTECENDENTS - sort vectors descending - third part of section 3.2
+        print("The sorted input values of the feature are stored in x and the membership values are stored in mf.")
+        # pdb.set_trace()
+
         # Find duplicate values for x and onlykeep the ones with the highest membership value
         _, ind = np.unique(x, return_index=True, return_inverse=False, return_counts=False, axis=None)
         mf = mf[ind]
         x = x[ind]
+        # ESTIMATE ANTECENDENTS - find duplicates - fourth part of section 3.2
+        print("The input values of the feature without duplicates are stored in x and the membership values are stored in mf.")
+        # pdb.set_trace()
 
         # Sort vectors based on x value (ascending order)
         indx = x.argsort(axis=0)
         mf = mf[indx]
         x = x[indx]
 
+        # ESTIMATE ANTECENDENTS - sort vectors ascending - fifth part of section 3.2
+        print("The input values of the feature in ascending order are stored in x and the membership values are stored in mf.")
+        # pdb.set_trace()
+
         xval = np.linspace(np.min(x), np.max(x), nc)
         mf = np.interp(xval, x, mf, left=None, right=None, period=None)
         x = xval
+
+        # ESTIMATE ANTECENDENTS - determine final membership values - sixth part of section 3.2
+        print("Final input values of the feature are stored in x and the membership values are stored in mf.")
+        pdb.set_trace()
+
         return mf, x
 
     def _fitMF(self, x, mf, mf_shape='gauss'):

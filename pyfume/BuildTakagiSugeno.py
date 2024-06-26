@@ -204,7 +204,7 @@ class BuildTSFIS(object):
                 self.consequent_parameters = ce.zero_order()
             else:
                 raise Exception("pyFUME currently only supports zero-order (model_order = 'zero') and first-order (model_order = 'first') fuzzy models.")
-
+            
             # Build a first-order Takagi-Sugeno model using Simpful
             simpbuilder = SugenoFISBuilder(
                 self.antecedent_parameters,

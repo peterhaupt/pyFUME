@@ -1,6 +1,7 @@
 import copy
 
 import simpful
+import pdb
 
 
 class SimpfulConverter(object):
@@ -194,6 +195,8 @@ class SimpfulConverter(object):
                     var, ", ".join(subchunk), var, self._extreme_values[num_var])
             chunk += "FS.add_linguistic_variable('%s', MF_%s)\n\n" % (var, var)
 
+        # pdb.set_trace()
+
         return chunk
 
     def _create_consequents(self):
@@ -215,6 +218,9 @@ class SimpfulConverter(object):
                     function += f'+{row[j]}*{v}'
                     j += 1
             result.append(function)
+        
+        # pdb.set_trace()
+
         return result
 
     def _create_antecedents(self):
@@ -247,6 +253,8 @@ class SimpfulConverter(object):
 
             chunk = (" AND ".join(pieces))
             result.append(chunk)
+
+        # pdb.set_trace()
 
         return result
 

@@ -80,8 +80,6 @@ class ConsequentEstimator(object):
         num_cols = x.shape[1]
         # Set everything except the last column to 0
         x[:, :num_cols-1] = 0
-        # pdb.set_trace()
-
 
 
         # Find the number of data points (mx & mf) , the number of variables (nx) and the
@@ -91,6 +89,10 @@ class ConsequentEstimator(object):
 
         # Calculate the sum of the degree of fulfillement (DOF) for each data point
         sumDOF = np.sum(f, 1)
+
+        # ESTIMATE CONSEQUENTS - Table 17
+        print("The sum of the degree of fulfillment (DOF) is stored in sumDOF.")
+        # pdb.set_trace()
 
         # When degree of fulfillment is zero (which means no rule is applicable), set to one
         NoRule = sumDOF == 0
@@ -162,5 +164,11 @@ class ConsequentEstimator(object):
                 # Perform least squares with weighted input and output
                 prm, _, _, _ = np.linalg.lstsq(xw, yw, rcond=None)
                 p[i] = prm
+                # ESTIMATE CONSEQUENTS - Table 17
+                print("The weighted input is stored in xw.")
+                print("The weighted output is stored in yw.")
+                print("The least squares solution is stored in prm.")
+                print("The parameters for the consequent function are stored in p.")
+                # pdb.set_trace()
 
         return p  # ,ym,yl,ylm

@@ -365,7 +365,7 @@ class AntecedentEstimator(object):
 
         # ESTIMATE ANTECENDENTS - determine final membership values - sixth part of section 3.2
         print("Final input values of the feature are stored in x and the membership values are stored in mf.")
-        pdb.set_trace()
+        # pdb.set_trace()
 
         return mf, x
 
@@ -385,13 +385,24 @@ class AntecedentEstimator(object):
         if mf_shape == 'gauss':
             # Determine initial parameters
             mu = sum(x * mf) / sum(mf)
+            # ESTIMATE ANTECENDENTS - determine initial parameters for parametrized membership functions - Table 13
+            print("The initial paramters for the mean (mu) are stored in mu.")
+            # pdb.set_trace()
             mf[mf == 0] = np.finfo(np.float64).eps
             sig = np.mean(np.sqrt(-((x - mu) ** 2) / (2 * np.log(mf))))
+            # ESTIMATE ANTECENDENTS - determine initial parameters for parametrized membership functions - Table 14
+            print("The initial paramters for the standard deviation are stored in sig.")
+            # pdb.set_trace()
 
             # Fit parameters to the data using least squares
             #            print('mu=', mu, 'sig=', sig)
             param, _ = curve_fit(self._gaussmf, x, mf, p0=[mu, sig], bounds=((-np.inf, 0), (np.inf, np.inf)),
                                  maxfev=10000)
+            
+            # ESTIMATE ANTECENDENTS - determine optimal parameters for parametrized membership functions - Table 15
+            print("The optimal parameters are stored in param.")
+            # pdb.set_trace()
+
 
         elif mf_shape == 'gauss2':
             # Determine initial parameters

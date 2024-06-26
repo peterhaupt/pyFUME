@@ -1,6 +1,7 @@
 from .SimpfulModelBuilder import SugenoFISBuilder
 
 import numpy as np
+import pdb
 
 
 class FireStrengthCalculator(object):

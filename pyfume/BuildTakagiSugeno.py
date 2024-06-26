@@ -185,15 +185,15 @@ class BuildTSFIS(object):
             self.antecedent_parameters = self._antecedent_estimator.determineMF(mf_shape=kwargs['mf_shape'], merge_threshold=merge_threshold, setnes_threshold=setnes_threshold, categorical_indices=kwargs['categorical_indices'])
             what_to_drop = self._antecedent_estimator._info_for_simplification
 
-            #############
-            ###### CONTINUE HERE TOMORROW
 
             # Calculate the firing strengths
             fsc = FireStrengthCalculator(antecedent_parameters=self.antecedent_parameters, nr_clus=self.nr_clus,
                                          variable_names=self.selected_variable_names,
                                          **kwargs)
             self.firing_strengths = fsc.calculate_fire_strength(data=self.x_train)
-
+            # CALCULATE THE FIRING STRENGTHS - Table 16
+            print("The firing strengths are stored in self.firing_strengths.")
+            # pdb.set_trace()
 
             # Estimate the parameters of the consequent
             ce = ConsequentEstimator(x_train=self.x_train, y_train=self.y_train, firing_strengths=self.firing_strengths,

@@ -41,7 +41,7 @@ class pyFUME(object):
         setnes_threshold=0.9,
         **kwargs):
 
-        print("Hello from Peter's pyFUME")
+        # print("Hello from Peter's pyFUME")
       
         if datapath is None and dataframe is None:
             raise Exception(

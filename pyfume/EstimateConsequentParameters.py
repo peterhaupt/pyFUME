@@ -75,7 +75,7 @@ class ConsequentEstimator(object):
         if u.shape[0] != 1 or u[0] != 1:
             x = np.hstack((x, np.ones((x.shape[0], 1))))
 
-        print("Hello from suglms")
+        # print("Hello from suglms")
         # Get the number of columns in x
         num_cols = x.shape[1]
         # Set everything except the last column to 0
@@ -91,7 +91,7 @@ class ConsequentEstimator(object):
         sumDOF = np.sum(f, 1)
 
         # ESTIMATE CONSEQUENTS - Table 17
-        print("The sum of the degree of fulfillment (DOF) is stored in sumDOF.")
+        # print("The sum of the degree of fulfillment (DOF) is stored in sumDOF.")
         # pdb.set_trace()
 
         # When degree of fulfillment is zero (which means no rule is applicable), set to one
@@ -165,10 +165,10 @@ class ConsequentEstimator(object):
                 prm, _, _, _ = np.linalg.lstsq(xw, yw, rcond=None)
                 p[i] = prm
                 # ESTIMATE CONSEQUENTS - Table 17
-                print("The weighted input is stored in xw.")
-                print("The weighted output is stored in yw.")
-                print("The least squares solution is stored in prm.")
-                print("The parameters for the consequent function are stored in p.")
+                # print("The weighted input is stored in xw.")
+                # print("The weighted output is stored in yw.")
+                # print("The least squares solution is stored in prm.")
+                # print("The parameters for the consequent function are stored in p.")
                 # pdb.set_trace()
 
         return p  # ,ym,yl,ylm

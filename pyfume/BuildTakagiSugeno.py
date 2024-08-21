@@ -160,7 +160,7 @@ class BuildTSFIS(object):
                     fcm_maxiter=kwargs['fcm_maxiter'], fcm_error=kwargs['fcm_error'])
                 
                 # FUZZY C-MEANS CLUSTERING - results - Table 9 and 10
-                print("The final centroids are stored in self.cluster_centers and the partition matrix in self.partition_matrix.")
+                # print("The final centroids are stored in self.cluster_centers and the partition matrix in self.partition_matrix.")
                 # pdb.set_trace()
 
             elif kwargs['cluster_method'] == 'gk':
@@ -192,7 +192,7 @@ class BuildTSFIS(object):
                                          **kwargs)
             self.firing_strengths = fsc.calculate_fire_strength(data=self.x_train)
             # CALCULATE THE FIRING STRENGTHS - Table 16
-            print("The firing strengths are stored in self.firing_strengths.")
+            # print("The firing strengths are stored in self.firing_strengths.")
             # pdb.set_trace()
 
             # Estimate the parameters of the consequent
@@ -204,7 +204,8 @@ class BuildTSFIS(object):
                 self.consequent_parameters = ce.zero_order()
             else:
                 raise Exception("pyFUME currently only supports zero-order (model_order = 'zero') and first-order (model_order = 'first') fuzzy models.")
-            
+        
+
             # Build a first-order Takagi-Sugeno model using Simpful
             simpbuilder = SugenoFISBuilder(
                 self.antecedent_parameters,
@@ -221,6 +222,7 @@ class BuildTSFIS(object):
                 categorical_indices=kwargs['categorical_indices'])
 
             self.model = simpbuilder.simpfulmodel
+
 
         elif kwargs['data_split_method'] == 'cross_validation' or kwargs['data_split_method'] == 'k-fold_cross_validation' or kwargs['data_split_method'] == 'crossvalidation' or kwargs['data_split_method'] == 'cv' or kwargs['data_split_method'] == 'kfold':
             if 'number_of_folds' not in kwargs.keys(): kwargs['number_of_folds'] = 10

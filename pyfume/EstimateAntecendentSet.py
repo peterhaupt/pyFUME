@@ -30,7 +30,7 @@ class AntecedentEstimator(object):
         self._info_for_simplification = None
         self._calculate_all_extreme_values()
         # ESTIMATE ANTECENDENTS - determine extreme values - Table 11
-        print("The extreme values are stored in self._extreme_values. The first element is the minimum and the second element is the maximum for each variable.")
+        # print("The extreme values are stored in self._extreme_values. The first element is the minimum and the second element is the maximum for each variable.")
         # pdb.set_trace()
         self._setnes_removed_sets = defaultdict(list)
 
@@ -197,7 +197,6 @@ class AntecedentEstimator(object):
                 # Setnes' rule simplification: detect which sets are similar to the universal set
                 #                              using Jaccard similarity and a threshold.
                 if setnes_threshold<1.:
-
                     index1 = v*number_of_clusters + c1
                     funname1, params1 = mf_list[index1]
 
@@ -285,7 +284,7 @@ class AntecedentEstimator(object):
             mfin = np.divide(mfin, np.max(mfin))
 
         # ESTIMATE ANTECENDENTS - section 3.2. - normalise the membership values of fuzzy c-means clustering - Table 12
-        print("The normalise membership values are stored in mfin. The input values of the feature are stored in xin.")
+        # print("The normalise membership values are stored in mfin. The input values of the feature are stored in xin.")
         # pdb.set_trace()
 
         # Initialize auxilary variables
@@ -308,8 +307,8 @@ class AntecedentEstimator(object):
                 mf[i + nc] = acut[i]
 
         # ESTIMATE ANTECENDENTS - determine elements in the alpha cuts - first part of section 3.2
-        print("The input values of the feature are stored in x and the membership values are stored in mf.")
-        print("The first half of the values are the minimum and the second half are the maximum for each alpha cut.")
+        # print("The input values of the feature are stored in x and the membership values are stored in mf.")
+        # print("The first half of the values are the minimum and the second half are the maximum for each alpha cut.")
         # pdb.set_trace()
 
         # # Determine the elements in the alpha cuts    
@@ -329,7 +328,7 @@ class AntecedentEstimator(object):
         mf = mf[idx == False]
 
         # ESTIMATE ANTECENDENTS - delete NaN values - second part of section 3.2
-        print("The cleaned input values of the feature are stored in x and the membership values are stored in mf.")
+        # print("The cleaned input values of the feature are stored in x and the membership values are stored in mf.")
         # pdb.set_trace()
 
         # Sort vectors based on membership value (descending order)
@@ -339,7 +338,7 @@ class AntecedentEstimator(object):
         x = x[indmf]
 
         # ESTIMATE ANTECENDENTS - sort vectors descending - third part of section 3.2
-        print("The sorted input values of the feature are stored in x and the membership values are stored in mf.")
+        # print("The sorted input values of the feature are stored in x and the membership values are stored in mf.")
         # pdb.set_trace()
 
         # Find duplicate values for x and onlykeep the ones with the highest membership value
@@ -347,7 +346,7 @@ class AntecedentEstimator(object):
         mf = mf[ind]
         x = x[ind]
         # ESTIMATE ANTECENDENTS - find duplicates - fourth part of section 3.2
-        print("The input values of the feature without duplicates are stored in x and the membership values are stored in mf.")
+        # print("The input values of the feature without duplicates are stored in x and the membership values are stored in mf.")
         # pdb.set_trace()
 
         # Sort vectors based on x value (ascending order)
@@ -356,7 +355,7 @@ class AntecedentEstimator(object):
         x = x[indx]
 
         # ESTIMATE ANTECENDENTS - sort vectors ascending - fifth part of section 3.2
-        print("The input values of the feature in ascending order are stored in x and the membership values are stored in mf.")
+        # print("The input values of the feature in ascending order are stored in x and the membership values are stored in mf.")
         # pdb.set_trace()
 
         xval = np.linspace(np.min(x), np.max(x), nc)
@@ -364,7 +363,7 @@ class AntecedentEstimator(object):
         x = xval
 
         # ESTIMATE ANTECENDENTS - determine final membership values - sixth part of section 3.2
-        print("Final input values of the feature are stored in x and the membership values are stored in mf.")
+        # print("Final input values of the feature are stored in x and the membership values are stored in mf.")
         # pdb.set_trace()
 
         return mf, x
@@ -386,12 +385,12 @@ class AntecedentEstimator(object):
             # Determine initial parameters
             mu = sum(x * mf) / sum(mf)
             # ESTIMATE ANTECENDENTS - determine initial parameters for parametrized membership functions - Table 13
-            print("The initial paramters for the mean (mu) are stored in mu.")
+            # print("The initial paramters for the mean (mu) are stored in mu.")
             # pdb.set_trace()
             mf[mf == 0] = np.finfo(np.float64).eps
             sig = np.mean(np.sqrt(-((x - mu) ** 2) / (2 * np.log(mf))))
             # ESTIMATE ANTECENDENTS - determine initial parameters for parametrized membership functions - Table 14
-            print("The initial paramters for the standard deviation are stored in sig.")
+            # print("The initial paramters for the standard deviation are stored in sig.")
             # pdb.set_trace()
 
             # Fit parameters to the data using least squares
@@ -400,7 +399,7 @@ class AntecedentEstimator(object):
                                  maxfev=10000)
             
             # ESTIMATE ANTECENDENTS - determine optimal parameters for parametrized membership functions - Table 15
-            print("The optimal parameters are stored in param.")
+            # print("The optimal parameters are stored in param.")
             # pdb.set_trace()
 
 

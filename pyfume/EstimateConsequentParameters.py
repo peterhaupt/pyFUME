@@ -75,11 +75,11 @@ class ConsequentEstimator(object):
         if u.shape[0] != 1 or u[0] != 1:
             x = np.hstack((x, np.ones((x.shape[0], 1))))
 
-        # print("Hello from suglms")
+        # attempt to get a working zero order implementation - but not used anymore
         # Get the number of columns in x
-        num_cols = x.shape[1]
+        # num_cols = x.shape[1]
         # Set everything except the last column to 0
-        x[:, :num_cols-1] = 0
+        # x[:, :num_cols-1] = 0
 
 
         # Find the number of data points (mx & mf) , the number of variables (nx) and the

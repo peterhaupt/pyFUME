@@ -27,7 +27,7 @@ class ConsequentEstimator(object):
         """
             Estimates the consequent parameters of the zero-order Sugeno-Takagi model using one of the following methods:
                 - normalized means
-                - global Least Squares Estimation (globa_LSE)
+                - global Least Squares Estimation (global_LSE)
                 - local Least Squares Estimation (local_LSE)
                 - gradient descent
                 - genetic algorithm (GA)

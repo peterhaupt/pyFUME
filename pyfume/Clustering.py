@@ -39,7 +39,7 @@ class Clusterer(object):
             self.data = np.concatenate((self.x_train, np.expand_dims(self.y_train, axis=1)),
                                        axis=1)  # .reshape(len(self.y_train),1)),axis=1)
 
-    def cluster(self, method="fcm", **kwargs):
+    def cluster(self, method="fst-pso", **kwargs):
         """
         Clusters the data using the clustering method as specified by the user.
             

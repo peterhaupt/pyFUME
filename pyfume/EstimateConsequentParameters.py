@@ -21,9 +21,12 @@ class ConsequentEstimator(object):
         self.y_train = y_train
         self.firing_strengths = firing_strengths
 
-    def zero_order(self):
+    def zero_order(self, method="normalized_means"):
         """
-            Estimates the consequent parameters of the zero-order Sugeno-Takagi model using normalized means.
+            Estimates the consequent parameters of the zero-order Sugeno-Takagi model using:
+                - normalized means
+                - Least Squares Estimation (LSE)
+
         
             Args:
                 df: default value returned when the sum of grades equals to one (default = 0).
@@ -31,14 +34,34 @@ class ConsequentEstimator(object):
             Returns:
                 The parameters for the consequent function.
         """
-        p = np.zeros((self.firing_strengths.shape[1]))
-        for clus in range(0, self.firing_strengths.shape[1]):
-            fs = self.firing_strengths[:, clus]
-            fs = np.fmax(fs, np.finfo(np.float64).eps)  # avoid 0's in the matrix
-            normalized_weights = fs / fs.sum(0)
-            s = np.multiply(normalized_weights, self.y_train)
-            p[clus] = sum(s)
-        return p
+        if method == "normalized_means":
+            p = np.zeros((self.firing_strengths.shape[1]))
+            for clus in range(0, self.firing_strengths.shape[1]):
+                fs = self.firing_strengths[:, clus]
+                fs = np.fmax(fs, np.finfo(np.float64).eps)  # avoid 0's in the matrix
+                normalized_weights = fs / fs.sum(0)
+                s = np.multiply(normalized_weights, self.y_train)
+                p[clus] = sum(s)
+            return p
+        elif method == "LSE":
+            # Number of rules (clusters)
+            num_rules = self.firing_strengths.shape[1]
+            
+            # Ensure the matrix is not singular by adding a small value (regularization)
+            epsilon = np.finfo(np.float64).eps
+            
+            # Create the design matrix with firing strengths
+            F = np.hstack([self.firing_strengths[:, i].reshape(-1, 1) for i in range(num_rules)])
+            
+            # Ensure the design matrix has no 0's or NaN
+            F = np.fmax(F, epsilon)
+            
+            # Perform Least Squares Estimation (LSE)
+            # This solves the normal equation: p = (F.T @ F)^(-1) @ F.T @ y
+            FtF_inv = np.linalg.inv(F.T @ F + epsilon * np.eye(num_rules))  # Add regularization
+            p = FtF_inv @ F.T @ self.y_train
+            
+            return p
 
     def suglms(self, global_fit=False, df=0):
         """
@@ -77,9 +100,9 @@ class ConsequentEstimator(object):
 
         # attempt to get a working zero order implementation - but not used anymore
         # Get the number of columns in x
-        num_cols = x.shape[1]
+        # num_cols = x.shape[1]
         # Set everything except the last column to 0
-        x[:, :num_cols-1] = 0
+        # x[:, :num_cols-1] = 0
 
 
         # Find the number of data points (mx & mf) , the number of variables (nx) and the

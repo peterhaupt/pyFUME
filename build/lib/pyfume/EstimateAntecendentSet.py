@@ -263,7 +263,7 @@ class AntecedentEstimator(object):
         S = [G.subgraph(c).copy() for c in connected_components(G)]
         return S
 
-    def _convexMF(self, xin, mfin, norm=1, nc=1000): 
+    def _convexMF(self, xin, mfin, norm=1, nc=1000): ###### CHANGE nc back to 1000
 
         # Calculates the convex membership function that envelopes a given set of
         # data points and their corresponding membership values. 

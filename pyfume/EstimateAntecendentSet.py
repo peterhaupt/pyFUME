@@ -41,7 +41,7 @@ class AntecedentEstimator(object):
             
             Args:
                 mf_shape: The desired shape of the fuzzy sets. The user can choose
-                    from 'gauss' (gaussian), 'gauss2' (double gaussion) or 'sigmf' 
+                    from 'gauss' (gaussian), 'gauss2' (double gaussion) or 'sigmoid' 
                     (sigmoidal) (default = gauss).
                 merge_threshold: Threshold for the merging of fuzzy sets for 
                     the GRABS approach. By default no merging takes place 
@@ -376,7 +376,7 @@ class AntecedentEstimator(object):
         # x:  N x 1 domain of input variable
         # mf: N x 1 membership values for input data x 
         # shape: Type of membership function to fit (possible values: 'gauss', 
-        # 'gauss2' and 'sigmf')
+        # 'gauss2' and 'sigmoid')
         #
         # Output:
         # param: matrix of membership function parameters
@@ -420,30 +420,37 @@ class AntecedentEstimator(object):
             param, _ = curve_fit(self._gauss2mf, x, mf, p0=[mu1, sig1, mu2, sig2], maxfev=1000,
                                  bounds=((-np.inf, 0, -np.inf, 0), (np.inf, np.inf, np.inf, np.inf)))
 
-        elif mf_shape == 'sigmf':
-            # Determine initial parameters
-            if np.argmax(mf) - np.argmin(mf) > 0:  # if sloping to the right
-                if len(x[mf >= 0.5]) > 0:
-                    c = x[mf >= 0.5][0]
-                    s = 1
-                elif len(x[mf >= 0.5]) == 0:  # if there are no datapoints with membership larger than 0
-                    c = x[0]
-                    s = 1
-            elif np.argmax(mf) - np.argmin(mf) < 0:  # if sloping to the left
-                if len(x[mf <= 0.5]) > 0:
-                    c = x[mf <= 0.5][0]
-                    s = 1
-                elif len(x[mf <= 0.5]) == 0:  # if there are no datapoints with membership smaller than 0
-                    c = x[-1]
-                    s = 1
-                    # Fit parameters of the function to the data using non-linear least squares
+        elif mf_shape == 'sigmoid':
+            # Try fitting the sigmoidal membership function
             try:
-                param, _ = curve_fit(self._sigmf, x, mf, p0=[c, s], maxfev=1000)
+                if np.argmax(mf) - np.argmin(mf) > 0:  # Sloping to the right
+                    c = x[mf >= 0.5][0] if len(x[mf >= 0.5]) > 0 else x[0]
+                    s = 1
+                else:  # Sloping to the left
+                    c = x[mf <= 0.5][0] if len(x[mf <= 0.5]) > 0 else x[-1]
+                    s = 1
+
+                param, _ = curve_fit(self._sigmoid, x, mf, p0=[c, s], maxfev=1000)
+
             except RuntimeError:
-                print(
-                    'pyFUME attempted to fit sigmoidal shaped membership functions, but was unable to find fitting parameters. pyFUME will now terminate. Please consider using a different shape for the membership functions.')
-                import sys
-                sys.exit()
+                print('Failed to fit sigmoidal membership function, falling back to Gaussian.')
+                # Fallback to Gaussian if sigmoidal fitting fails
+                mf_shape = 'gauss'
+                mu = sum(x * mf) / sum(mf)
+                mf[mf == 0] = np.finfo(np.float64).eps
+                sig = np.mean(np.sqrt(-((x - mu) ** 2) / (2 * np.log(mf))))
+                
+                param, _ = curve_fit(self._gaussmf, x, mf, p0=[mu, sig], 
+                                    bounds=((-np.inf, 0), (np.inf, np.inf)), maxfev=10000)
+                
+        elif mf_shape == 'invgauss':
+            # Determine initial parameters for inverse Gaussian
+            mu = sum(x * mf) / sum(mf)
+            lambda_param = np.var(x)  # Initialize shape parameter (λ) with variance
+            
+            # Fit parameters to the data using least squares for inverse Gaussian
+            param, _ = curve_fit(self._invgaussmf, x, mf, p0=[mu, lambda_param], maxfev=1000,
+                                bounds=((0, 0), (np.inf, np.inf)))
 
         return mf_shape, param
 
@@ -467,7 +474,7 @@ class AntecedentEstimator(object):
         y[idx2] = self._gaussmf(x[idx2], mu2, sigma2)
         return y
 
-    def _sigmf(self, x, c, s):
+    def _sigmoid(self, x, c, s):
         # x: data
         # b: x where mf is 0.5
         # c: Controls 'width' of the sigmoidal region about `b` (magnitude); also
@@ -475,3 +482,26 @@ class AntecedentEstimator(object):
         #    means the left side approaches 0.0 while the right side approaches 1,
         #    a negative value of `c` means the opposite.
         return 1. / (1. + np.exp(- s * (x - c)))
+    
+    def _invgaussmf(self, x, mu, lambda_param):
+        """
+        Inverse Gaussian (Wald) membership function.
+
+        Args:
+            x (array): Input data.
+            mu (float): Mean of the distribution.
+            lambda_param (float): Shape parameter.
+
+        Returns:
+            array: Membership values corresponding to input data x.
+        """
+        from numpy import exp, sqrt, pi
+        
+        # Avoid invalid values in the input by enforcing x > 0
+        x = np.clip(x, 1e-6, None)  # Ensure x is always positive and non-zero to avoid division by zero
+        
+        # Avoid negative or zero values of lambda_param
+        lambda_param = max(lambda_param, 1e-6)
+        
+        # Inverse Gaussian formula with safe values for x
+        return sqrt(lambda_param / (2 * pi * x**3)) * exp(-lambda_param * (x - mu)**2 / (2 * mu**2 * x))

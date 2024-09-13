@@ -18,5 +18,5 @@ setuptools.setup(
         'Operating System :: OS Independent',
     ],
     python_requires='>=3.8',
-    install_requires=[ 'scipy==1.10.1', 'numpy==1.24.4', 'simpful==2.12.0', 'fst-pso==1.8.1', 'pandas==1.5.3', "deap==1.4.1", "pyswarm==0.6" ],
+    install_requires=[ 'scipy==1.10.1', 'numpy==1.24.4', 'simpful==2.12.0', 'fst-pso==1.8.1', 'pandas==1.5.3', "deap==1.4.1", "pyswarm==0.6", "kmodes==0.12.2" ],
 )

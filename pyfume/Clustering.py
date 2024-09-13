@@ -1,6 +1,9 @@
 import numpy as np
-from scipy.spatial.distance import cdist
+from scipy.spatial.distance import cdist, hamming
 from scipy.linalg import norm
+from sklearn.cluster import SpectralClustering, DBSCAN, KMeans, AgglomerativeClustering
+from sklearn.mixture import GaussianMixture
+from kmodes.kprototypes import KPrototypes
 import pdb
 
 
@@ -181,7 +184,128 @@ class Clusterer(object):
                                                                     n_clusters=self.nr_clus, m=self.m,
                                                                     max_iter=max_iter, error=error)
 
+        elif method == "spectral":
+            centers, partition_matrix, jm = self._spectral_clustering(data=self.data, n_clusters=self.nr_clus)
+
+        elif method == "dbscan":
+            try:
+                eps = kwargs["dbscan_eps"]
+            except KeyError:
+                eps = 0.5  # Default value
+            
+            try:
+                min_samples = kwargs["dbscan_min_samples"]
+            except KeyError:
+                min_samples = 5  # Default value
+            
+            try:
+                centers, partition_matrix, jm = self._dbscan_clustering(data=self.data, eps=eps, min_samples=min_samples)
+            except ValueError as e:
+                if str(e) == "DBSCAN found no clusters, all points might be noise.":
+                    # If DBSCAN fails (i.e., all points are noise), fallback to FCM
+                    if self._verbose:
+                        print(" * DBSCAN found no clusters, falling back to FCM.")
+                    centers, partition_matrix, jm = self._fcm(data=self.data, n_clusters=self.nr_clus, m=self.m)
+                else:
+                    raise e  # Re-raise any other exceptions
+                
+        elif method == "gmm":
+            try:
+                max_iter = kwargs["gmm_max_iter"]
+            except KeyError:
+                max_iter = 100  # Default value
+            
+            try:
+                covariance_type = kwargs["gmm_covariance_type"]
+            except KeyError:
+                covariance_type = 'full'  # Default value
+            
+            centers, partition_matrix, jm = self._gmm_clustering(data=self.data, n_clusters=self.nr_clus, max_iter=max_iter, covariance_type=covariance_type)
+        
+        elif method == "kprototypes":
+            try:
+                max_iter = kwargs["kprototypes_max_iter"]
+            except KeyError:
+                max_iter = 100  # Default value
+            
+            try:
+                init = kwargs["kprototypes_init"]
+            except KeyError:
+                init = 'Cao'  # Default value
+            
+            try:
+                gamma = kwargs["kprototypes_gamma"]
+            except KeyError:
+                gamma = None  # Default: Automatically determined by the algorithm
+            
+            try:
+                categorical_indices = kwargs["kprototypes_categorical_indices"]
+            except KeyError:
+                # Assume all features are numerical if no categorical indices are specified
+                import pandas as pd
+                df = pd.DataFrame(self.data)
+                catvar = df.select_dtypes(include=['object', 'category'])  # Identify categorical variables automatically (if any)
+                if catvar.shape[1] > 0:
+                    categorical_indices = list(catvar.columns)
+                else:
+                    categorical_indices = []
+
+            # If no categorical data exists, fallback to K-Means
+            if len(categorical_indices) == 0:
+                if self._verbose:
+                    print(" * No categorical data detected, falling back to K-Means.")
+                centers, partition_matrix, jm = self._kmeans_clustering(data=self.data, n_clusters=self.nr_clus, max_iter=max_iter)
+            else:
+                centers, partition_matrix, jm = self._kprototypes_clustering(data=self.data, n_clusters=self.nr_clus, 
+                                                                            categorical_indices=categorical_indices, 
+                                                                            max_iter=max_iter, init=init, gamma=gamma)
+
+        elif method == "kmeans":
+            try:
+                max_iter = kwargs["kmeans_max_iter"]
+            except KeyError:
+                max_iter = 300  # Default value for K-Means
+
+            centers, partition_matrix, jm = self._kmeans_clustering(data=self.data, n_clusters=self.nr_clus, max_iter=max_iter)
+
+        
+        elif method == "hierarchical":
+            try:
+                linkage = kwargs["hierarchical_linkage"]
+            except KeyError:
+                linkage = 'ward'  # Default linkage criterion
+            
+            try:
+                metric = kwargs["hierarchical_metric"]
+            except KeyError:
+                metric = 'euclidean'  # Default distance metric
+
+            # Call hierarchical clustering
+            centers, partition_matrix, jm = self._hierarchical_clustering(data=self.data, n_clusters=self.nr_clus, 
+                                                                  linkage=linkage, metric=metric)
+            
+        elif method == "fcm_binary":
+            try:
+                max_iter = kwargs["fcm_max_iter"]
+            except KeyError:
+                max_iter = 1000  # Default value
+            
+            try:
+                m = kwargs["fcm_m"]
+            except KeyError:
+                m = 2  # Default fuzziness coefficient
+            
+            try:
+                error = kwargs["fcm_error"]
+            except KeyError:
+                error = 0.005  # Default stopping criterion
+    
+            centers, partition_matrix, jm = self._fcm_binary(data=self.data, n_clusters=self.nr_clus, m=m, max_iter=max_iter, error=error)
+        
+        
         return centers, partition_matrix, jm
+    
+    
 
     def _fcm(self, data, n_clusters, m=2, max_iter=1000, error=0.005):
         # data: 2d array, size (N, S). N is the number of instances; S is the number of variables
@@ -644,6 +768,266 @@ class Clusterer(object):
 
         # Return the cluster center location, the membership matrix and the fitness value
         return V, U, jm
+    
+    ### spectral clustering
+
+    def _spectral_clustering(self, data, n_clusters):
+        """
+        Perform spectral clustering on the dataset.
+
+        Args:
+            data: The data to be clustered.
+            n_clusters: The number of clusters to form.
+        
+        Returns:
+            centers: None (Spectral Clustering does not return cluster centers).
+            partition_matrix: A matrix containing the cluster assignments.
+            jm: None (Spectral Clustering does not have a fitness measure like FCM).
+        """
+        clustering = SpectralClustering(n_clusters=n_clusters, affinity='nearest_neighbors', random_state=42)
+        labels = clustering.fit_predict(data)
+        
+        # Create a partition matrix with 1 for assigned cluster, 0 otherwise
+        partition_matrix = np.zeros((len(labels), n_clusters))
+        partition_matrix[np.arange(len(labels)), labels] = 1
+        
+        centers = None  # Spectral clustering does not provide explicit cluster centers
+        jm = None  # Spectral clustering does not have a direct fitness measure
+        
+        return centers, partition_matrix, jm
+
+    ### DBSCAN for clustering
+
+    def _dbscan_clustering(self, data, eps=0.5, min_samples=5):
+        """
+        Perform DBSCAN clustering on the dataset.
+        
+        Args:
+            data: The data to be clustered.
+            eps: The maximum distance between two samples for one to be considered as in the neighborhood of the other.
+            min_samples: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.
+        
+        Returns:
+            centers: None (DBSCAN does not return cluster centers).
+            partition_matrix: A matrix containing the cluster assignments.
+            jm: None (DBSCAN does not have a fitness measure like FCM).
+        """
+        clustering = DBSCAN(eps=eps, min_samples=min_samples)
+        labels = clustering.fit_predict(data)
+        
+        # Handle the case where there are no clusters or all points are considered noise
+        n_clusters = len(set(labels)) - (1 if -1 in labels else 0)  # Ignore noise label (-1)
+        
+        # If all points are noise or no clusters found
+        if n_clusters == 0:
+            raise ValueError("DBSCAN found no clusters, all points might be noise.")
+        
+        # Create a partition matrix with 1 for assigned cluster, 0 otherwise
+        partition_matrix = np.zeros((len(labels), n_clusters))
+        
+        # Only assign points that are not noise (-1 label)
+        valid_indices = labels != -1
+        partition_matrix[np.arange(len(labels))[valid_indices], labels[valid_indices]] = 1
+
+        centers = None  # DBSCAN does not provide explicit cluster centers
+        jm = None  # DBSCAN does not have a direct fitness measure
+        
+        return centers, partition_matrix, jm
+    
+    ### Gaussian Mixture Model for clustering
+
+    def _gmm_clustering(self, data, n_clusters, max_iter=100, covariance_type='full'):
+        """
+        Perform Gaussian Mixture Model (GMM) clustering on the dataset.
+        
+        Args:
+            data: The data to be clustered.
+            n_clusters: The number of clusters to form.
+            max_iter: Maximum number of iterations for the GMM algorithm (default = 100).
+            covariance_type: The type of covariance to use ('full', 'tied', 'diag', 'spherical').
+        
+        Returns:
+            centers: The location of the identified cluster centers (means of the Gaussians).
+            partition_matrix: A matrix containing the cluster probabilities.
+            jm: The log-likelihood of the GMM fit.
+        """
+        gmm = GaussianMixture(n_components=n_clusters, max_iter=max_iter, covariance_type=covariance_type, random_state=42)
+        gmm.fit(data)
+        
+        labels = gmm.predict(data)  # Assign clusters
+        partition_matrix = gmm.predict_proba(data)  # Probabilities for each cluster
+        
+        # The means of the Gaussian components serve as the "centers"
+        centers = gmm.means_
+        
+        # Use the log likelihood as the "jm" fitness measure
+        jm = gmm.score(data) * len(data)  # Log-likelihood of the data given the model
+        
+        return centers, partition_matrix, jm
+    
+    ### K-Prototypes for clustering
+
+    def _kprototypes_clustering(self, data, n_clusters, categorical_indices, max_iter=100, init='Cao', gamma=None):
+        """
+        Perform K-Prototypes clustering on the dataset.
+        
+        Args:
+            data: The data to be clustered (can be a mix of numerical and categorical).
+            n_clusters: The number of clusters to form.
+            categorical_indices: A list of indices specifying which columns are categorical.
+            max_iter: Maximum number of iterations for the K-Prototypes algorithm (default = 100).
+            init: The method for initialization ('Cao', 'Huang', or 'random').
+            gamma: The weight for categorical values when computing dissimilarities (optional).
+        
+        Returns:
+            centers: The centers of the clusters (both numerical means and categorical modes).
+            partition_matrix: A matrix containing the cluster assignments.
+            jm: The cost of the K-Prototypes solution (i.e., sum of dissimilarities).
+        """
+        kproto = KPrototypes(n_clusters=n_clusters, init=init, max_iter=max_iter, random_state=42, gamma=gamma)
+        labels = kproto.fit_predict(data, categorical=categorical_indices)
+        
+        # Cluster centers (prototypes: numerical means and categorical modes)
+        centers = kproto.cluster_centroids_
+        
+        # Create partition matrix with 1 for assigned cluster, 0 otherwise
+        partition_matrix = np.zeros((len(labels), n_clusters))
+        partition_matrix[np.arange(len(labels)), labels] = 1
+        
+        # Cost of the K-Prototypes clustering solution
+        jm = kproto.cost_
+        
+        return centers, partition_matrix, jm
+    
+    ### KMeans for clustering
+
+    def _kmeans_clustering(self, data, n_clusters, max_iter=300):
+        """
+        Perform K-Means clustering on the dataset.
+        
+        Args:
+            data: The data to be clustered.
+            n_clusters: The number of clusters to form.
+            max_iter: Maximum number of iterations for the K-Means algorithm (default = 300).
+        
+        Returns:
+            centers: The centroids of the clusters.
+            partition_matrix: A matrix containing the cluster assignments.
+            jm: The inertia (sum of squared distances) of the solution.
+        """
+        kmeans = KMeans(n_clusters=n_clusters, max_iter=max_iter, random_state=42)
+        labels = kmeans.fit_predict(data)
+        
+        # Cluster centers (means of the clusters)
+        centers = kmeans.cluster_centers_
+        
+        # Create partition matrix with 1 for assigned cluster, 0 otherwise
+        partition_matrix = np.zeros((len(labels), n_clusters))
+        partition_matrix[np.arange(len(labels)), labels] = 1
+        
+        # Use inertia (sum of squared distances) as the fitness measure
+        jm = kmeans.inertia_
+        
+        return centers, partition_matrix, jm
+    
+    ### Agglomerative / Hierarchical Clustering
+
+    def _hierarchical_clustering(self, data, n_clusters, linkage='ward', metric='euclidean'):
+        """
+        Perform Hierarchical (Agglomerative) Clustering on the dataset.
+        
+        Args:
+            data: The data to be clustered.
+            n_clusters: The number of clusters to form.
+            linkage: The linkage criterion to use ('ward', 'complete', 'average', 'single').
+            metric: The distance metric to use ('euclidean', 'l1', 'l2', 'manhattan', 'cosine').
+                    Note: 'metric' is ignored if linkage is 'ward', as 'ward' only works with Euclidean distances.
+        
+        Returns:
+            centers: None (Hierarchical clustering does not return cluster centers).
+            partition_matrix: A matrix containing the cluster assignments.
+            jm: None (Hierarchical clustering does not have a fitness measure).
+        """
+        # If 'ward' is selected, metric must be 'euclidean'
+        if linkage == 'ward':
+            clustering = AgglomerativeClustering(n_clusters=n_clusters, linkage=linkage)
+        else:
+            clustering = AgglomerativeClustering(n_clusters=n_clusters, linkage=linkage, metric=metric)
+        
+        labels = clustering.fit_predict(data)
+        
+        # Create a partition matrix with 1 for assigned cluster, 0 otherwise
+        partition_matrix = np.zeros((len(labels), n_clusters))
+        partition_matrix[np.arange(len(labels)), labels] = 1
+        
+        centers = None  # Hierarchical clustering does not provide explicit cluster centers
+        jm = None  # Hierarchical clustering does not have a direct fitness measure
+        
+        return centers, partition_matrix, jm
+    
+    ### Fuzzy C-Means clustering with Hamming distance for binary data
+
+    def _fcm_binary(self, data, n_clusters, m=2, max_iter=1000, error=0.005, epsilon=1e-5):
+        """
+        Perform Fuzzy C-Means clustering optimized for binary data (using Hamming distance).
+        
+        Args:
+            data: The binary data to be clustered (0s and 1s).
+            n_clusters: The number of clusters to form.
+            m: The fuzziness coefficient (default = 2).
+            max_iter: Maximum number of iterations (default = 1000).
+            error: Stopping criterion (default = 0.005).
+            epsilon: Regularization parameter to avoid division by zero (default = 1e-5).
+        
+        Returns:
+            centers: The cluster centroids.
+            partition_matrix: A matrix containing the fuzzy membership values.
+            jm: The objective function value.
+        """
+        n_instances, n_features = data.shape  # Ensure we get both the number of instances and features
+        np.random.seed(42)
+
+        # Randomly initialize the membership matrix
+        u = np.random.rand(n_instances, n_clusters)
+        u = np.fmax(u, np.finfo(np.float64).eps)  # Prevent division by zero
+
+        for iteration in range(max_iter):
+            u_old = u.copy()
+            
+            # Elevate the membership matrix to the power of m
+            um = u ** m
+
+            # Compute cluster centers (binary centroids)
+            sum_um = np.atleast_2d(um.sum(axis=0))  # Regularization for sum(um)
+            
+            # Use pseudo-inverse to avoid division errors in center calculation
+            centers = (um.T.dot(data) / (sum_um.T + epsilon)).T
+            
+            # Ensure that centers have the same dimensions as the data points
+            assert centers.shape == (n_clusters, n_features), "Cluster centers must have the same number of features as data points"
+            
+            # Compute the Hamming distance between each point and the cluster centers
+            dist = np.zeros((n_instances, n_clusters))
+            for i in range(n_clusters):
+                for j in range(n_instances):
+                    dist[j, i] = hamming(data[j], np.round(centers[i]))  # Round centroids to 0/1 for binary data
+
+            dist = np.fmax(dist, epsilon)  # Avoid division by zero by ensuring a minimum value with epsilon
+            
+            # Compute the objective function value (jm)
+            jm = (um * dist ** 2).sum()
+            
+            # Update the membership matrix using the Hamming distance
+            u = dist ** (- 2. / (m - 1))
+            u /= np.sum(u, axis=1, keepdims=True)
+            
+            # Stopping criterion
+            if np.linalg.norm(u - u_old) < error:
+                break
+
+        partition_matrix = u
+        return centers, partition_matrix, jm
+
 
 
 if __name__ == '__main__':

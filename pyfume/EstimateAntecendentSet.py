@@ -404,21 +404,29 @@ class AntecedentEstimator(object):
 
 
         elif mf_shape == 'gauss2':
-            # Determine initial parameters
-            mu1 = x[mf >= 0.95][0]
-            mu2 = x[mf >= 0.95][-1]
-            xmf = x[mf >= 0.5]
-            sig1 = (mu1 - xmf[0]) / (np.sqrt(2 * np.log(2)))
-            sig2 = (xmf[-1] - mu2) / (np.sqrt(2 * np.log(2)))
-            if sig1 == 0.0:
-                sig1 = 0.1
-            if sig2 == 0.0:
-                sig2 = 0.1
+            try:
+                # Attempt to fit 'gauss2' MF
+                mu1 = x[mf >= 0.95][0]  # Leftmost high membership point
+                mu2 = x[mf >= 0.95][-1]  # Rightmost high membership point
+                xmf = x[mf >= 0.5]  # Mid-range membership points
+                sig1 = (mu1 - xmf[0]) / (np.sqrt(2 * np.log(2)))  # Standard deviation on the left
+                sig2 = (xmf[-1] - mu2) / (np.sqrt(2 * np.log(2)))  # Standard deviation on the right
+                sig1 = sig1 if sig1 != 0 else 0.1  # Avoid zero variance
+                sig2 = sig2 if sig2 != 0 else 0.1  # Avoid zero variance
 
-            # Fit parameters to the data using least squares
-            #            print('mu1',mu1,'sig1',sig1,'mu2',mu2,'sig2',sig2)
-            param, _ = curve_fit(self._gauss2mf, x, mf, p0=[mu1, sig1, mu2, sig2], maxfev=1000,
-                                 bounds=((-np.inf, 0, -np.inf, 0), (np.inf, np.inf, np.inf, np.inf)))
+                # Fit 'gauss2' parameters
+                param, _ = curve_fit(self._gauss2mf, x, mf, p0=[mu1, sig1, mu2, sig2], maxfev=1000,
+                                    bounds=((-np.inf, 0, -np.inf, 0), (np.inf, np.inf, np.inf, np.inf)))
+            except (IndexError, RuntimeError):
+                # Fall back to 'gauss' if 'gauss2' fails
+                print("Falling back to 'gauss' from 'gauss2' due to fitting issues.")
+                # Determine initial parameters for Gaussian MF
+                mu = sum(x * mf) / sum(mf)
+                mf[mf == 0] = np.finfo(np.float64).eps  # To avoid log(0)
+                sig = np.mean(np.sqrt(-((x - mu) ** 2) / (2 * np.log(mf))))
+
+                # Fit Gaussian parameters to data
+                param, _ = curve_fit(self._gaussmf, x, mf, p0=[mu, sig], bounds=((-np.inf, 0), (np.inf, np.inf)), maxfev=10000)
 
         elif mf_shape == 'sigmoid':
             # Try fitting the sigmoidal membership function

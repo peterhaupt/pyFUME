@@ -174,6 +174,21 @@ class SimpfulConverter(object):
                 elif fstype == 'singleton':
                     chunk += f"function=Singletons_MF({params}), term='{term}')"
 
+                elif fstype == 'trimf':
+                    chunk += "function=Triangular_MF(%f, %f, %f), term='%s')" % (params[0], params[1], params[2], term)
+
+                elif fstype == 'trapmf':
+                    chunk += "function=Trapezoidal_MF(%f, %f, %f, %f), term='%s')" % (params[0], params[1], params[2], params[3], term)
+
+                elif fstype == 'invsigmoid':
+                    chunk += "function=InvSigmoid_MF(%f, %f), term='%s')" % (params[0], params[1], term)
+
+                elif fstype == 'invgauss':
+                    chunk += "function=InvGaussian_MF(%f, %f), term='%s')" % (params[0], params[1], term)
+
+                elif fstype == 'crisp':
+                    chunk += "function=Crisp_MF(%f, %f), term='%s')" % (params[0], params[1], term)
+
                 else:
                     raise Exception("Fuzzy set type not supported," + fstype)
 

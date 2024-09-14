@@ -26,10 +26,10 @@ class ConsequentEstimator(object):
     def zero_order(self, method="normalized_means"):
         """
             Estimates the consequent parameters of the zero-order Sugeno-Takagi model using one of the following methods:
-                - normalized means
+                - normalized means (normalized_means)
                 - global Least Squares Estimation (global_LSE)
                 - local Least Squares Estimation (local_LSE)
-                - gradient descent
+                - gradient descent (gradient_descent)
                 - genetic algorithm (GA)
                 - particle swarm optimization (PSO)
 
@@ -51,26 +51,32 @@ class ConsequentEstimator(object):
             return p
         
         elif method == "global_LSE":
-            # Number of rules (clusters)
-            num_rules = self.firing_strengths.shape[1]
+            try:
+                # Number of rules (clusters)
+                num_rules = self.firing_strengths.shape[1]
+
+                # Ensure the matrix is not singular by adding a small value (regularization)
+                epsilon = np.finfo(np.float64).eps
+
+                # Calculate the sum of the degree of fulfillment (DOF) for each data point
+                sumDOF = np.sum(self.firing_strengths, axis=1)
+                sumDOF[sumDOF == 0] = 1  # Avoid division by zero for data points with no applicable rules
+
+                # Normalize the firing strengths by the sum of DOF
+                normalized_firing_strengths = self.firing_strengths / sumDOF[:, np.newaxis]
+
+                # Perform Least Squares Estimation (LSE)
+                # This solves the normal equation: p = (F.T @ F)^(-1) @ F.T @ y
+                F = normalized_firing_strengths
+                FtF_inv = np.linalg.inv(F.T @ F + epsilon * np.eye(num_rules))  # Regularization
+                p = FtF_inv @ F.T @ self.y_train
+
+                return p
             
-            # Ensure the matrix is not singular by adding a small value (regularization)
-            epsilon = np.finfo(np.float64).eps
-
-            # Calculate the sum of the degree of fulfillment (DOF) for each data point
-            sumDOF = np.sum(self.firing_strengths, axis=1)
-            sumDOF[sumDOF == 0] = 1  # Avoid division by zero for data points with no applicable rules
-
-            # Normalize the firing strengths by the sum of DOF
-            normalized_firing_strengths = self.firing_strengths / sumDOF[:, np.newaxis]
-            
-            # Perform Least Squares Estimation (LSE)
-            # This solves the normal equation: p = (F.T @ F)^(-1) @ F.T @ y
-            F = normalized_firing_strengths
-            FtF_inv = np.linalg.inv(F.T @ F + epsilon * np.eye(num_rules))  # Regularization
-            p = FtF_inv @ F.T @ self.y_train
-
-            return p
+            except np.linalg.LinAlgError:
+                # Fall back to normalized_means if global_LSE fails due to singular matrix
+                print("Singular matrix encountered in global_LSE, falling back to normalized_means.")
+                return self.zero_order(method="normalized_means")
         
         elif method =="local_LSE":
             # Number of rules (clusters)

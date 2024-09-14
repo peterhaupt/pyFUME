@@ -451,6 +451,72 @@ class AntecedentEstimator(object):
             # Fit parameters to the data using least squares for inverse Gaussian
             param, _ = curve_fit(self._invgaussmf, x, mf, p0=[mu, lambda_param], maxfev=1000,
                                 bounds=((0, 0), (np.inf, np.inf)))
+            
+        elif mf_shape == 'trimf':
+            # Estimate initial parameters for triangular MF
+            a = np.min(x[mf >= 0.1])  # Left endpoint
+            b = x[np.argmax(mf)]      # Peak of the triangle
+            c = np.max(x[mf >= 0.1])  # Right endpoint
+
+            # Fit parameters to the data using least squares for triangular MF
+            param, _ = curve_fit(self._trimf, x, mf, p0=[a, b, c], maxfev=10000,
+                                bounds=((-np.inf, -np.inf, -np.inf), (np.inf, np.inf, np.inf)))
+            
+            # Ensure the parameters follow the order a <= b <= c
+            param = np.sort(param)
+
+        elif mf_shape == 'trapmf':
+            # Estimate initial parameters for trapezoidal MF
+            a = np.min(x[mf >= 0.1])  # Left foot
+            b = np.min(x[mf >= 0.5])  # Left shoulder
+            c = np.max(x[mf >= 0.5])  # Right shoulder
+            d = np.max(x[mf >= 0.1])  # Right foot
+
+            # Fit parameters to the data using least squares for trapezoidal MF
+            param, _ = curve_fit(self._trapmf, x, mf, p0=[a, b, c, d], maxfev=10000,
+                                bounds=((-np.inf, -np.inf, -np.inf, -np.inf), (np.inf, np.inf, np.inf, np.inf)))
+
+            # Ensure the parameters follow the order a <= b <= c <= d
+            param = np.sort(param)
+
+        elif mf_shape == 'invsigmoid':
+            try:
+                if np.argmax(mf) - np.argmin(mf) > 0:  # Sloping to the right
+                    c = x[mf >= 0.5][0] if len(x[mf >= 0.5]) > 0 else x[0]
+                    s = -1  # Negative slope for inverse sigmoid
+                else:  # Sloping to the left
+                    c = x[mf <= 0.5][0] if len(x[mf <= 0.5]) > 0 else x[-1]
+                    s = -1
+
+                param, _ = curve_fit(self._invsigmoid, x, mf, p0=[c, s], maxfev=1000)
+
+            except RuntimeError:
+                print('Failed to fit inverse sigmoidal membership function, falling back to Gaussian.')
+                # Fallback to Gaussian if inverse sigmoid fitting fails
+                mf_shape = 'gauss'
+                mu = sum(x * mf) / sum(mf)
+                mf[mf == 0] = np.finfo(np.float64).eps
+                sig = np.mean(np.sqrt(-((x - mu) ** 2) / (2 * np.log(mf))))
+                
+                param, _ = curve_fit(self._gaussmf, x, mf, p0=[mu, sig], 
+                                    bounds=((-np.inf, 0), (np.inf, np.inf)), maxfev=10000)
+                
+        elif mf_shape == 'invgauss':
+            # Estimate initial parameters for inverse Gaussian MF
+            mu = sum(x * mf) / sum(mf)
+            lambda_param = np.var(x)  # Initialize shape parameter (λ) with variance
+            
+            # Fit parameters to the data using least squares for inverse Gaussian MF
+            param, _ = curve_fit(self._invgaussian, x, mf, p0=[mu, lambda_param], maxfev=1000,
+                                bounds=((0, 0), (np.inf, np.inf)))
+            
+        elif mf_shape == 'crisp':
+            # For crisp membership functions, we only need the left and right extremes
+            a = np.min(x[mf >= 0.5])  # Left extreme value
+            b = np.max(x[mf >= 0.5])  # Right extreme value
+            
+            # Return the parameters directly, no fitting required
+            param = [a, b]
 
         return mf_shape, param
 
@@ -504,4 +570,77 @@ class AntecedentEstimator(object):
         lambda_param = max(lambda_param, 1e-6)
         
         # Inverse Gaussian formula with safe values for x
+        return sqrt(lambda_param / (2 * pi * x**3)) * exp(-lambda_param * (x - mu)**2 / (2 * mu**2 * x))
+    
+    def _trimf(self, x, a, b, c):
+        """
+        Triangular membership function.
+        
+        Args:
+            x (array): Input data.
+            a (float): Left endpoint of the triangle.
+            b (float): Peak of the triangle.
+            c (float): Right endpoint of the triangle.
+            
+        Returns:
+            array: Membership values corresponding to input data x.
+        """
+        return np.maximum(np.minimum((x - a) / (b - a), (c - x) / (c - b)), 0)
+    
+    def _trapmf(self, x, a, b, c, d, epsilon=1e-6):
+        """
+        Trapezoidal membership function with safeguards against division by zero.
+
+        Args:
+            x (array): Input data.
+            a (float): Left foot of the trapezoid (start of the slope).
+            b (float): Left shoulder of the trapezoid (start of the flat top).
+            c (float): Right shoulder of the trapezoid (end of the flat top).
+            d (float): Right foot of the trapezoid (end of the slope).
+            epsilon (float): Small value to prevent division by zero.
+
+        Returns:
+            array: Membership values corresponding to input data x.
+        """
+        # Ensure that we don't divide by zero by adding epsilon if the denominator is too small
+        denom1 = max(b - a, epsilon)
+        denom2 = max(d - c, epsilon)
+        
+        # Calculate the trapezoidal membership function
+        return np.maximum(np.minimum(np.minimum((x - a) / denom1, 1), (d - x) / denom2), 0)
+    
+    def _invsigmoid(self, x, c, s):
+        """
+        Inverse Sigmoid membership function.
+
+        Args:
+            x (array): Input data.
+            c (float): Controls the midpoint of the inverse sigmoid.
+            s (float): Controls the steepness of the curve.
+        
+        Returns:
+            array: Membership values corresponding to input data x.
+        """
+        return 1. / (1. + np.exp(s * (x - c)))
+    
+    def _invgaussian(self, x, mu, lambda_param):
+        """
+        Inverse Gaussian membership function (Wald distribution).
+
+        Args:
+            x (array): Input data.
+            mu (float): Mean of the distribution.
+            lambda_param (float): Shape parameter.
+        
+        Returns:
+            array: Membership values corresponding to input data x.
+        """
+        from numpy import exp, sqrt, pi
+        # Avoid invalid values in the input by enforcing x > 0
+        x = np.clip(x, 1e-6, None)  # Ensure x is always positive and non-zero to avoid division by zero
+        
+        # Avoid negative or zero values of lambda_param
+        lambda_param = max(lambda_param, 1e-6)
+        
+        # Inverse Gaussian formula
         return sqrt(lambda_param / (2 * pi * x**3)) * exp(-lambda_param * (x - mu)**2 / (2 * mu**2 * x))

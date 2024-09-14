@@ -289,19 +289,26 @@ class Clusterer(object):
                 max_iter = kwargs["fcm_max_iter"]
             except KeyError:
                 max_iter = 1000  # Default value
-            
+
             try:
                 m = kwargs["fcm_m"]
             except KeyError:
                 m = 2  # Default fuzziness coefficient
-            
+
             try:
                 error = kwargs["fcm_error"]
             except KeyError:
                 error = 0.005  # Default stopping criterion
-    
-            centers, partition_matrix, jm = self._fcm_binary(data=self.data, n_clusters=self.nr_clus, m=m, max_iter=max_iter, error=error)
-        
+
+            try:
+                epsilon = kwargs["fcm_epsilon"]
+            except KeyError:
+                epsilon = 1e-6  # Default epsilon to avoid division by zero
+
+            centers, partition_matrix, jm = self._fcm_binary(
+                data=self.data, n_clusters=self.nr_clus, m=m, max_iter=max_iter, error=error, epsilon=epsilon
+            )
+                
         
         return centers, partition_matrix, jm
     
@@ -967,66 +974,67 @@ class Clusterer(object):
     
     ### Fuzzy C-Means clustering with Hamming distance for binary data
 
-    def _fcm_binary(self, data, n_clusters, m=2, max_iter=1000, error=0.005, epsilon=1e-5):
+    def _fcm_binary(self, data, n_clusters, m=2, max_iter=1000, error=0.005, epsilon=1e-6):
         """
         Perform Fuzzy C-Means clustering optimized for binary data (using Hamming distance).
-        
+
         Args:
             data: The binary data to be clustered (0s and 1s).
             n_clusters: The number of clusters to form.
             m: The fuzziness coefficient (default = 2).
             max_iter: Maximum number of iterations (default = 1000).
             error: Stopping criterion (default = 0.005).
-            epsilon: Regularization parameter to avoid division by zero (default = 1e-5).
-        
+            epsilon: Regularization parameter to avoid division by zero (default = 1e-6).
+
         Returns:
-            centers: The cluster centroids.
+            centers: The cluster centroids (binary centroids).
             partition_matrix: A matrix containing the fuzzy membership values.
             jm: The objective function value.
         """
-        n_instances, n_features = data.shape  # Ensure we get both the number of instances and features
-        np.random.seed(42)
+        # Ensure we are dealing with binary data
+        n_instances, n_features = data.shape
+        np.random.seed(42)  # For reproducibility
 
-        # Randomly initialize the membership matrix
+        # Initialize membership matrix randomly
         u = np.random.rand(n_instances, n_clusters)
-        u = np.fmax(u, np.finfo(np.float64).eps)  # Prevent division by zero
+        u = np.fmax(u, np.finfo(np.float64).eps)  # Avoid zero values
 
+        # Main loop
         for iteration in range(max_iter):
+            # Save the old membership matrix to compare for stopping condition
             u_old = u.copy()
-            
-            # Elevate the membership matrix to the power of m
+
+            # Elevate membership matrix to the power of m (fuzziness coefficient)
             um = u ** m
 
-            # Compute cluster centers (binary centroids)
-            sum_um = np.atleast_2d(um.sum(axis=0))  # Regularization for sum(um)
-            
-            # Use pseudo-inverse to avoid division errors in center calculation
-            centers = (um.T.dot(data) / (sum_um.T + epsilon)).T
-            
-            # Ensure that centers have the same dimensions as the data points
-            assert centers.shape == (n_clusters, n_features), "Cluster centers must have the same number of features as data points"
-            
-            # Compute the Hamming distance between each point and the cluster centers
+            # Calculate the cluster centers
+            sum_um = um.sum(axis=0)
+            sum_um = np.fmax(sum_um, epsilon)  # Avoid division by zero
+            centers = (um.T @ data) / sum_um[:, np.newaxis]  # Weighted sum of data points
+
+            # Round cluster centers to binary values (0 or 1)
+            binary_centers = np.round(centers)
+
+            # Compute the Hamming distance between each data point and the binary cluster centers
             dist = np.zeros((n_instances, n_clusters))
             for i in range(n_clusters):
-                for j in range(n_instances):
-                    dist[j, i] = hamming(data[j], np.round(centers[i]))  # Round centroids to 0/1 for binary data
+                dist[:, i] = np.sum(np.abs(data - binary_centers[i]), axis=1) / n_features
 
-            dist = np.fmax(dist, epsilon)  # Avoid division by zero by ensuring a minimum value with epsilon
-            
-            # Compute the objective function value (jm)
+            dist = np.fmax(dist, epsilon)  # Avoid division by zero
+
+            # Calculate the objective function (jm)
             jm = (um * dist ** 2).sum()
-            
-            # Update the membership matrix using the Hamming distance
+
+            # Update the membership matrix using the new distances
             u = dist ** (- 2. / (m - 1))
             u /= np.sum(u, axis=1, keepdims=True)
-            
-            # Stopping criterion
+
+            # Check stopping criterion
             if np.linalg.norm(u - u_old) < error:
                 break
 
         partition_matrix = u
-        return centers, partition_matrix, jm
+        return binary_centers, partition_matrix, jm
 
 
 

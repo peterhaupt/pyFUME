@@ -409,8 +409,8 @@ class AntecedentEstimator(object):
                 mu1 = x[mf >= 0.95][0]  # Leftmost high membership point
                 mu2 = x[mf >= 0.95][-1]  # Rightmost high membership point
                 xmf = x[mf >= 0.5]  # Mid-range membership points
-                sig1 = (mu1 - xmf[0]) / (np.sqrt(2 * np.log(2)))  # Standard deviation on the left
-                sig2 = (xmf[-1] - mu2) / (np.sqrt(2 * np.log(2)))  # Standard deviation on the right
+                sig1 = max((mu1 - xmf[0]) / (np.sqrt(2 * np.log(2))), 1e-6)  # Standard deviation on the left
+                sig2 = max((xmf[-1] - mu2) / (np.sqrt(2 * np.log(2))), 1e-6)  # Standard deviation on the right
                 sig1 = sig1 if sig1 != 0 else 0.1  # Avoid zero variance
                 sig2 = sig2 if sig2 != 0 else 0.1  # Avoid zero variance
 
@@ -533,7 +533,8 @@ class AntecedentEstimator(object):
         # mu: Center of the bell curve (float)
         # sigma: Width of the bell curve (float)
         # a: normalizes the bell curve, for normal fuzzy set a=1 (float) 
-        return a * np.exp(-(x - mu) ** 2 / (2 * sigma ** 2))
+        exp_input = np.clip(-(x - mu) ** 2 / (2 * max(sigma ** 2, 1e-6)), -500, 500)
+        return a * np.exp(exp_input)
 
     def _gauss2mf(self, x, mu1, sigma1, mu2, sigma2):
         # x: Data
@@ -544,8 +545,8 @@ class AntecedentEstimator(object):
         y = np.ones(len(x))
         idx1 = x <= mu1
         idx2 = x > mu2
-        y[idx1] = self._gaussmf(x[idx1], mu1, sigma1)
-        y[idx2] = self._gaussmf(x[idx2], mu2, sigma2)
+        y[idx1] = self._gaussmf(x[idx1], mu1, max(sigma1, 1e-6))
+        y[idx2] = self._gaussmf(x[idx2], mu2, max(sigma2, 1e-6))
         return y
 
     def _sigmoid(self, x, c, s):

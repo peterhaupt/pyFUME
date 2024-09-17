@@ -549,13 +549,22 @@ class AntecedentEstimator(object):
         return y
 
     def _sigmoid(self, x, c, s):
-        # x: data
-        # b: x where mf is 0.5
-        # c: Controls 'width' of the sigmoidal region about `b` (magnitude); also
-        #    which side of the function is open (sign). A positive value of `a`
-        #    means the left side approaches 0.0 while the right side approaches 1,
-        #    a negative value of `c` means the opposite.
-        return 1. / (1. + np.exp(- s * (x - c)))
+        """
+        Sigmoid membership function.
+
+        Args:
+            x (array): Input data.
+            c (float): Controls the midpoint of the sigmoid.
+            s (float): Controls the steepness of the curve.
+
+        Returns:
+            array: Membership values corresponding to input data x.
+        """
+        # Clip the input to avoid overflow in exp.
+        exp_input = np.clip(-s * (x - c), -500, 500)
+
+        # Return the sigmoid safely
+        return 1. / (1. + np.exp(exp_input))
     
     def _invgaussmf(self, x, mu, lambda_param):
         """
@@ -625,11 +634,16 @@ class AntecedentEstimator(object):
             x (array): Input data.
             c (float): Controls the midpoint of the inverse sigmoid.
             s (float): Controls the steepness of the curve.
-        
+
         Returns:
             array: Membership values corresponding to input data x.
         """
-        return 1. / (1. + np.exp(s * (x - c)))
+        # Clip the input to avoid overflow in exp. 
+        # The range (-500, 500) is chosen because np.exp(500) is still manageable in float64.
+        exp_input = np.clip(s * (x - c), -500, 500)
+
+        # Return the inverse sigmoid safely
+        return 1. / (1. + np.exp(exp_input))
     
     def _invgaussian(self, x, mu, lambda_param):
         """

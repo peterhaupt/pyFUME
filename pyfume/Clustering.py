@@ -622,6 +622,10 @@ class Clusterer(object):
         # Initialize the partition matrix
         u = np.random.dirichlet(np.ones(self.data.shape[0]), size=self.nr_clus)
 
+        # Gustafson-Kessel - Table 13 - random initialization of clusters
+        # print("matrix is stored in variable u")
+        # pdb.set_trace()
+
         centers = []
         iteration = 0
 
@@ -631,11 +635,23 @@ class Clusterer(object):
             # Caluculate the locations of the cluster centers
             centers = self._next_centers_gk(data=self.data, u=u, m=m)
 
+            # Gustafson-Kessel - Table 14 - calculate cluster centers
+            # print("cluster centers are stored in centers")
+            # pdb.set_trace()
+
             # Calculate the covariance matrix
             f = self._covariance_gk(data=self.data, v=centers, u=u, m=m)
 
+            # Gustafson-Kessel - Table 15 - calculate covariance matrix
+            # print("covariance matrix is stored in f")
+            # pdb.set_trace()
+
             # Calculate the distance between cluster centers and data points
             dist = self._distance_gk(data=self.data, v=centers, f=f)
+
+            # Gustafson-Kessel - Table 16 - calculate between cluster centers and data points
+            # print("distance matrix is stored in dist")
+            # pdb.set_trace()
 
             # calculate objective
             jm = (u * dist ** 2).sum()
@@ -644,11 +660,19 @@ class Clusterer(object):
             u = self._next_u_gk(dist)
             iteration += 1
 
+            # Gustafson-Kessel - Table 17 - update partition matrix
+            # print("updated partition matrix is stored in u")
+            # pdb.set_trace()
+
             # Stopping criteria
             if norm(u - u_old) < error:
                 iteration = max_iter
 
         u = np.transpose(u)
+
+        # Gustafson-Kessel - Table 18 - final partition matrix
+        # print("final partition matrix is stored in u")
+        # pdb.set_trace()
         return centers, u, jm
 
     def _next_centers_gk(self, data, u, m=2):
@@ -800,6 +824,11 @@ class Clusterer(object):
         
         centers = None  # Spectral clustering does not provide explicit cluster centers
         jm = None  # Spectral clustering does not have a direct fitness measure
+
+        # Spectral Clustering - Table XX - final partition matrix
+        # could not be calculated for the pyFUME by hand toy dataset
+        # print("final partition matrix is stored in partition_matrix")
+        # pdb.set_trace()
         
         return centers, partition_matrix, jm
 
@@ -836,6 +865,11 @@ class Clusterer(object):
         valid_indices = labels != -1
         partition_matrix[np.arange(len(labels))[valid_indices], labels[valid_indices]] = 1
 
+        # DBSCAN - Table XX - final partition matrix
+        # could not be calculated for the pyFUME by hand toy dataset
+        # print("final partition matrix is stored in partition_matrix")
+        # pdb.set_trace()
+
         centers = None  # DBSCAN does not provide explicit cluster centers
         jm = None  # DBSCAN does not have a direct fitness measure
         
@@ -861,7 +895,6 @@ class Clusterer(object):
         gmm = GaussianMixture(n_components=n_clusters, max_iter=max_iter, covariance_type=covariance_type, random_state=42)
         gmm.fit(data)
         
-        labels = gmm.predict(data)  # Assign clusters
         partition_matrix = gmm.predict_proba(data)  # Probabilities for each cluster
         
         # The means of the Gaussian components serve as the "centers"
@@ -869,6 +902,12 @@ class Clusterer(object):
         
         # Use the log likelihood as the "jm" fitness measure
         jm = gmm.score(data) * len(data)  # Log-likelihood of the data given the model
+
+        # GMM - Table 19 - centers of gmm clusters
+        # GMM - Table 20 - partition matrix
+        print("GMM partition matrix is stored in partition_matrix")
+        print("GMM centers are stored in centers")
+        pdb.set_trace()
         
         return centers, partition_matrix, jm
     

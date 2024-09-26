@@ -905,9 +905,9 @@ class Clusterer(object):
 
         # GMM - Table 19 - centers of gmm clusters
         # GMM - Table 20 - partition matrix
-        print("GMM partition matrix is stored in partition_matrix")
-        print("GMM centers are stored in centers")
-        pdb.set_trace()
+        # print("GMM partition matrix is stored in partition_matrix")
+        # print("GMM centers are stored in centers")
+        # pdb.set_trace()
         
         return centers, partition_matrix, jm
     
@@ -942,6 +942,12 @@ class Clusterer(object):
         
         # Cost of the K-Prototypes clustering solution
         jm = kproto.cost_
+
+        # KPrototypes - Table XX - centers of kprototype clusters
+        # KPrototypes - Table XX - partition matrix
+        # print("KPrototypes partition matrix is stored in partition_matrix")
+        # print("KPrototypes centers are stored in centers")
+        # pdb.set_trace()
         
         return centers, partition_matrix, jm
     
@@ -973,6 +979,12 @@ class Clusterer(object):
         
         # Use inertia (sum of squared distances) as the fitness measure
         jm = kmeans.inertia_
+
+        # K-Means - Table 21 - centers of k-means clusters
+        # K-Means - Table 22 - partition matrix
+        # print("K-Means partition matrix is stored in partition_matrix")
+        # print("K-Means centers are stored in centers")
+        # pdb.set_trace()
         
         return centers, partition_matrix, jm
     
@@ -1009,6 +1021,10 @@ class Clusterer(object):
         centers = None  # Hierarchical clustering does not provide explicit cluster centers
         jm = None  # Hierarchical clustering does not have a direct fitness measure
         
+        # Hierarchical clustering - Table 23 - partition matrix
+        # print("Hierarchical clustering partition matrix is stored in partition_matrix")
+        # pdb.set_trace()
+
         return centers, partition_matrix, jm
     
     ### Fuzzy C-Means clustering with Hamming distance for binary data
@@ -1073,6 +1089,13 @@ class Clusterer(object):
                 break
 
         partition_matrix = u
+
+        # fuzzy c-means - Table 24 - partition matrix
+        # fuzzy c-means - Table 25 - cluster centers
+        # print("Fuzzy C-Means partition matrix is stored in partition_matrix")
+        # print("Fuzzy C-Means cluster centers are stored in binary_centers")
+        # pdb.set_trace()
+
         return binary_centers, partition_matrix, jm
 
 

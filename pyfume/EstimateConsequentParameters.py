@@ -48,6 +48,11 @@ class ConsequentEstimator(object):
                 normalized_weights = fs / fs.sum(0)
                 s = np.multiply(normalized_weights, self.y_train)
                 p[clus] = sum(s)
+            
+            # ESTIMATE CONSEQUENTS - normalized means - Table 38
+            # print("The parameters for the consequent function are stored in p.")
+            # pdb.set_trace()
+            
             return p
         
         elif method == "global_LSE":
@@ -70,6 +75,10 @@ class ConsequentEstimator(object):
                 F = normalized_firing_strengths
                 FtF_inv = np.linalg.inv(F.T @ F + epsilon * np.eye(num_rules))  # Regularization
                 p = FtF_inv @ F.T @ self.y_train
+
+                # ESTIMATE CONSEQUENTS - global LSE - Table 39
+                # print("The parameters for the consequent function are stored in p.")
+                # pdb.set_trace()
 
                 return p
             
@@ -105,6 +114,10 @@ class ConsequentEstimator(object):
                 # So, we're effectively summing the weighted output and normalizing by the firing strengths.
                 p[i] = np.sum(weighted_y) / np.sum(firing_strengths_rule)
     
+            # ESTIMATE CONSEQUENTS - local LSE - Table 40
+            # print("The parameters for the consequent function are stored in p.")
+            # pdb.set_trace()
+            
             return p
         
         elif method == "gradient_descent":
@@ -137,6 +150,10 @@ class ConsequentEstimator(object):
                 if iter % 100 == 0:
                     print(f"Iteration {iter}: MSE = {mse}")
 
+            # ESTIMATE CONSEQUENTS - gradient descent - Table 41
+            # print("The parameters for the consequent function are stored in p.")
+            # pdb.set_trace()
+            
             return p
         
         elif method == "GA":
@@ -188,6 +205,10 @@ class ConsequentEstimator(object):
 
             # Convert the best individual to a NumPy array and round
             best_individual = np.array(best_individual).round(decimals=2)
+
+            # ESTIMATE CONSEQUENTS - GA - Table 42
+            # print("The parameters for the consequent function are stored in best_individual.")
+            # pdb.set_trace()
             
             return best_individual  # Best parameters for the consequent functions
         
@@ -210,6 +231,10 @@ class ConsequentEstimator(object):
 
             # Run PSO
             best_consequents, best_mse = pso(mse_fitness, lb, ub, swarmsize=50, maxiter=100)
+            
+            # ESTIMATE CONSEQUENTS - particle swarm optimization - Table 43
+            print("The parameters for the consequent function are stored in best_consequents.")
+            pdb.set_trace()
 
             return best_consequents  # Best parameters for the consequent functions
 

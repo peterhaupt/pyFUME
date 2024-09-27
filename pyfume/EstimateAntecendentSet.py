@@ -384,12 +384,12 @@ class AntecedentEstimator(object):
         if mf_shape == 'gauss':
             # Determine initial parameters
             mu = sum(x * mf) / sum(mf)
-            # ESTIMATE ANTECENDENTS - determine initial parameters for parametrized membership functions - Table 13
+            # ESTIMATE ANTECENDENTS - determine initial parameters for gaussian membership functions - Table 28
             # print("The initial paramters for the mean (mu) are stored in mu.")
             # pdb.set_trace()
             mf[mf == 0] = np.finfo(np.float64).eps
             sig = np.mean(np.sqrt(-((x - mu) ** 2) / (2 * np.log(mf))))
-            # ESTIMATE ANTECENDENTS - determine initial parameters for parametrized membership functions - Table 14
+            # ESTIMATE ANTECENDENTS - determine initial parameters for gaussian membership functions - Table 29
             # print("The initial paramters for the standard deviation are stored in sig.")
             # pdb.set_trace()
 
@@ -398,7 +398,7 @@ class AntecedentEstimator(object):
             param, _ = curve_fit(self._gaussmf, x, mf, p0=[mu, sig], bounds=((-np.inf, 0), (np.inf, np.inf)),
                                  maxfev=10000)
             
-            # ESTIMATE ANTECENDENTS - determine optimal parameters for parametrized membership functions - Table 15
+            # ESTIMATE ANTECENDENTS - determine optimal parameters for gaussian membership functions - Table 30
             # print("The optimal parameters are stored in param.")
             # pdb.set_trace()
 
@@ -417,6 +417,13 @@ class AntecedentEstimator(object):
                 # Fit 'gauss2' parameters
                 param, _ = curve_fit(self._gauss2mf, x, mf, p0=[mu1, sig1, mu2, sig2], maxfev=1000,
                                     bounds=((-np.inf, 0, -np.inf, 0), (np.inf, np.inf, np.inf, np.inf)))
+                
+                # ESTIMATE ANTECENDENTS
+                # parameters for double gaussian membership functions - Table 31
+                # print("The parameters are stored in param.")
+                # pdb.set_trace()
+                    
+
             except (IndexError, RuntimeError):
                 # Fall back to 'gauss' if 'gauss2' fails
                 print("Falling back to 'gauss' from 'gauss2' due to fitting issues.")
@@ -437,8 +444,13 @@ class AntecedentEstimator(object):
                 else:  # Sloping to the left
                     c = x[mf <= 0.5][0] if len(x[mf <= 0.5]) > 0 else x[-1]
                     s = 1
-
+                
                 param, _ = curve_fit(self._sigmoid, x, mf, p0=[c, s], maxfev=1000)
+
+                # ESTIMATE ANTECENDENTS
+                # parameters for sigmoid function - Table 32
+                # print("The parameters are stored in param.")
+                # pdb.set_trace()
 
             except RuntimeError:
                 print('Failed to fit sigmoidal membership function, falling back to Gaussian.')
@@ -460,6 +472,11 @@ class AntecedentEstimator(object):
             param, _ = curve_fit(self._invgaussmf, x, mf, p0=[mu, lambda_param], maxfev=1000,
                                 bounds=((0, 0), (np.inf, np.inf)))
             
+            # ESTIMATE ANTECENDENTS
+            # parameters for inverse gaussian function - Table XX
+            # print("The parameters are stored in param.")
+            # pdb.set_trace()
+            
         elif mf_shape == 'trimf':
             # Estimate initial parameters for triangular MF
             a = np.min(x[mf >= 0.1])  # Left endpoint
@@ -472,6 +489,11 @@ class AntecedentEstimator(object):
             
             # Ensure the parameters follow the order a <= b <= c
             param = np.sort(param)
+
+            # ESTIMATE ANTECENDENTS
+            # parameters for triangular membership function - Table 33
+            # print("The parameters are stored in param.")
+            # pdb.set_trace()
 
         elif mf_shape == 'trapmf':
             # Estimate initial parameters for trapezoidal MF
@@ -487,6 +509,11 @@ class AntecedentEstimator(object):
             # Ensure the parameters follow the order a <= b <= c <= d
             param = np.sort(param)
 
+            # ESTIMATE ANTECENDENTS
+            # parameters for trapezoidal membership function - Table 34
+            # print("The parameters are stored in param.")
+            # pdb.set_trace()
+
         elif mf_shape == 'invsigmoid':
             try:
                 if np.argmax(mf) - np.argmin(mf) > 0:  # Sloping to the right
@@ -497,6 +524,11 @@ class AntecedentEstimator(object):
                     s = -1
 
                 param, _ = curve_fit(self._invsigmoid, x, mf, p0=[c, s], maxfev=1000)
+
+                # ESTIMATE ANTECENDENTS
+                # parameters for inverse sigmoid membership function - Table 35
+                # print("The parameters are stored in param.")
+                # pdb.set_trace()
 
             except RuntimeError:
                 print('Failed to fit inverse sigmoidal membership function, falling back to Gaussian.')
@@ -518,6 +550,11 @@ class AntecedentEstimator(object):
             param, _ = curve_fit(self._invgaussian, x, mf, p0=[mu, lambda_param], maxfev=1000,
                                 bounds=((0, 0), (np.inf, np.inf)))
             
+            # ESTIMATE ANTECENDENTS
+            # parameters for inverse gaussian membership function - Table XX
+            # print("The parameters are stored in param.")
+            # pdb.set_trace()
+            
         elif mf_shape == 'crisp':
             # For crisp membership functions, we only need the left and right extremes
             a = np.min(x[mf >= 0.5])  # Left extreme value
@@ -525,6 +562,11 @@ class AntecedentEstimator(object):
             
             # Return the parameters directly, no fitting required
             param = [a, b]
+
+            # ESTIMATE ANTECENDENTS
+            # parameters for crisp membership function - Table 36
+            # print("The parameters are stored in param.")
+            # pdb.set_trace()
 
         return mf_shape, param
 
